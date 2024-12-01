@@ -1,3 +1,4 @@
+// https://adventofcode.com/2024/day/1
 import { list1, list2 } from './data';
 
 const sortedList1 = list1.toSorted();
