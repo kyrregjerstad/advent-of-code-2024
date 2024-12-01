@@ -9,6 +9,7 @@
     "typescript": "^5.0.0"
   },
   "scripts": {
-    "start": "bun --watch day-1/index.ts"
+    "start": "bun --watch scripts/run-day.ts",
+    "new": "bun scripts/create-day.ts"
   }
 }
