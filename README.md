@@ -1,4 +1,4 @@
-# advent-of-code
+# advent-of-code 2024 🎄
 
 To install dependencies:
 
@@ -6,10 +6,19 @@ To install dependencies:
 bun install
 ```
 
-To run:
+To run a specific day, run:
 
 ```bash
-bun start
+bun start day-number
+# e.g. bun start day-1
 ```
 
-This project was created using `bun init` in bun v1.1.29. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+To create a new day, run:
+
+```bash
+bun new
+```
+
+This will create a new directory with the day number and populate it with the necessary files.
+
+Happy advent of code!
