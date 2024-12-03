@@ -17,25 +17,14 @@ async function createDay() {
     const dayFolder = `day-${nextDay}`;
 
     const indexTemplate = `
-import { data } from './data';
+const file = Bun.file('${dayFolder}/data.txt');
+const text = await file.text();
 
-console.log('Part 1:');
-// Your solution here
-
-console.log('Part 2:');
-// Your solution here
 `;
 
-    const dataTemplate = `export const data = \`
-// Paste your input data here
-\`;`;
-
-    // Create day directory
     await mkdir(dayFolder);
 
-    // Create files
     await writeFile(join(dayFolder, 'index.ts'), indexTemplate);
-    await writeFile(join(dayFolder, 'data.ts'), dataTemplate);
 
     console.log(`Created template for day ${nextDay}`);
   } catch (error) {
