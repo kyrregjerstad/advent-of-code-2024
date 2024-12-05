@@ -1,5 +1,7 @@
 # advent-of-code 2024 🎄
 
+The Data files are not included in the repo, since they are asked to not be distributed.
+
 To install dependencies:
 
 ```bash
