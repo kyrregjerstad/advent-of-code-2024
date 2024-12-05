@@ -1,6 +1,5 @@
 const file = Bun.file('day-4/data.txt');
 const text = await file.text();
-
 const grid = text
   .trim()
   .split('\n')
@@ -9,6 +8,25 @@ const grid = text
 type Position = { x: number; y: number };
 type Direction = { dx: number; dy: number };
 type GridDimensions = { width: number; height: number };
+type Grid = string[][];
+
+const createGridDimensions = (grid: Grid): GridDimensions => ({
+  height: grid.length,
+  width: grid[0].length,
+});
+
+const isInBounds = ({ x, y }: Position, { width, height }: GridDimensions) =>
+  x >= 0 && x < width && y >= 0 && y < height;
+
+const getCharAtPosition = (grid: Grid, { x, y }: Position) => grid[y][x];
+
+const getAllGridPositions = ({ width, height }: GridDimensions): Position[] =>
+  Array.from({ length: height }, (_, y) =>
+    Array.from({ length: width }, (_, x) => ({ x, y }))
+  ).flat();
+
+const getWordFromPositions = (grid: Grid, positions: Position[]): string =>
+  positions.map((pos) => getCharAtPosition(grid, pos)).join('');
 
 const patterns = {
   X: 'XMAS',
@@ -22,116 +40,69 @@ const directions: Direction[] = [
   { dx: -1, dy: 1 }, // diagonal down-left
 ];
 
-const countXMAS = (grid: string[][]) => {
-  const dimensions = {
-    height: grid.length,
-    width: grid[0].length,
-  };
+const getEndPosition = (start: Position, direction: Direction): Position => ({
+  x: start.x + direction.dx * 3,
+  y: start.y + direction.dy * 3,
+});
 
-  return getAllGridPositions(dimensions)
-    .flatMap((startPos) => {
-      const startChar = getCharAtPosition(grid, startPos);
-      if (!(startChar in patterns)) return [];
-
-      return directions
-        .filter((dir) => {
-          const endPos = getEndPosition(startPos, dir);
-          return isInBounds(endPos, dimensions);
-        })
-        .map((dir) => {
-          const positions = getWordPositions(startPos, dir);
-          const word = getWordFromPositions(grid, positions);
-          return word === patterns[startChar as keyof typeof patterns] ? 1 : 0;
-        });
-    })
-    .reduce((sum: number, count) => sum + count, 0);
-};
-
-function isInBounds({ x, y }: Position, { width, height }: GridDimensions) {
-  return x >= 0 && x < width && y >= 0 && y < height;
-}
-
-function getEndPosition(start: Position, direction: Direction) {
-  return {
-    x: start.x + direction.dx * 3,
-    y: start.y + direction.dy * 3,
-  };
-}
-
-function getWordPositions(start: Position, direction: Direction): Position[] {
-  return Array.from({ length: 4 }, (_, i) => ({
+const getWordPositions = (start: Position, direction: Direction): Position[] =>
+  Array.from({ length: 4 }, (_, i) => ({
     x: start.x + direction.dx * i,
     y: start.y + direction.dy * i,
   }));
-}
 
-const getCharAtPosition = (grid: string[][], { x, y }: Position) => grid[y][x];
+const findWordsFromPosition =
+  (grid: Grid, dimensions: GridDimensions) =>
+  (startPos: Position): number => {
+    const startChar = getCharAtPosition(grid, startPos);
+    if (!(startChar in patterns)) return 0;
 
-function getWordFromPositions(grid: string[][], positions: Position[]) {
-  return positions.map((pos) => getCharAtPosition(grid, pos)).join('');
-}
-
-function getAllGridPositions({ width, height }: GridDimensions) {
-  return Array.from({ length: height }, (_, y) =>
-    Array.from({ length: width }, (_, x) => ({ x, y }))
-  ).flat();
-}
-
-function isMAS(word: string): boolean {
-  return word === 'MAS' || word === 'SAM';
-}
-
-function getXShapePositions(center: Position): Position[][] {
-  return [
-    // First diagonal (top-left to bottom-right)
-    [
-      { x: center.x - 1, y: center.y - 1 }, // M
-      center, // A
-      { x: center.x + 1, y: center.y + 1 }, // S
-    ],
-    // Second diagonal (top-right to bottom-left)
-    [
-      { x: center.x + 1, y: center.y - 1 }, // M
-      center, // A
-      { x: center.x - 1, y: center.y + 1 }, // S
-    ],
-  ];
-}
-
-const countXMASPart2 = (grid: string[][]) => {
-  const dimensions = {
-    height: grid.length,
-    width: grid[0].length,
+    return directions
+      .filter((dir) => isInBounds(getEndPosition(startPos, dir), dimensions))
+      .map((dir) => {
+        const word = getWordFromPositions(grid, getWordPositions(startPos, dir));
+        return word === patterns[startChar as keyof typeof patterns] ? 1 : 0;
+      })
+      .reduce((sum: number, count) => sum + count, 0);
   };
 
-  let count = 0;
+const countXMAS = (grid: Grid): number => {
+  const dimensions = createGridDimensions(grid);
+  return getAllGridPositions(dimensions)
+    .map(findWordsFromPosition(grid, dimensions))
+    .reduce((sum, count) => sum + count, 0);
+};
 
-  getAllGridPositions(dimensions).forEach((center) => {
-    // Skip if the center position is not 'A'
-    if (getCharAtPosition(grid, center) !== 'A') return;
+const isMAS = (word: string): boolean => word === 'MAS' || word === 'SAM';
+
+const getXShapePositions = (center: Position): Position[][] => [
+  [{ x: center.x - 1, y: center.y - 1 }, center, { x: center.x + 1, y: center.y + 1 }],
+  [{ x: center.x + 1, y: center.y - 1 }, center, { x: center.x - 1, y: center.y + 1 }],
+]; // 🫠;
+
+const isValidXPattern =
+  (grid: Grid, dimensions: GridDimensions) =>
+  (center: Position): boolean => {
+    if (getCharAtPosition(grid, center) !== 'A') return false;
 
     const [diagonal1, diagonal2] = getXShapePositions(center);
 
-    if (
-      !diagonal1.every((pos) => isInBounds(pos, dimensions)) ||
-      !diagonal2.every((pos) => isInBounds(pos, dimensions))
-    ) {
-      return;
-    }
+    const isValid =
+      diagonal1.every((pos) => isInBounds(pos, dimensions)) &&
+      diagonal2.every((pos) => isInBounds(pos, dimensions));
 
-    const word1 = getWordFromPositions(grid, diagonal1);
-    const word2 = getWordFromPositions(grid, diagonal2);
+    if (!isValid) return false;
 
-    if (isMAS(word1) && isMAS(word2)) {
-      count++;
-    }
-  });
+    return (
+      isMAS(getWordFromPositions(grid, diagonal1)) &&
+      isMAS(getWordFromPositions(grid, diagonal2))
+    );
+  };
 
-  return count;
+const countXMASPart2 = (grid: Grid): number => {
+  const dimensions = createGridDimensions(grid);
+  return getAllGridPositions(dimensions).filter(isValidXPattern(grid, dimensions)).length;
 };
 
-// Part 1 result: 2458
-console.log('Part 1 result:', countXMAS(grid));
-
-// Part 2 result: 1945
-console.log('Part 2 result:', countXMASPart2(grid));
+console.log('Part 1 result:', countXMAS(grid)); // 2458
+console.log('Part 2 result:', countXMASPart2(grid)); // 1945
