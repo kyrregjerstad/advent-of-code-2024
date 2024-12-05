@@ -22,6 +22,31 @@ const directions: Direction[] = [
   { dx: -1, dy: 1 }, // diagonal down-left
 ];
 
+const countXMAS = (grid: string[][]) => {
+  const dimensions = {
+    height: grid.length,
+    width: grid[0].length,
+  };
+
+  return getAllGridPositions(dimensions)
+    .flatMap((startPos) => {
+      const startChar = getCharAtPosition(grid, startPos);
+      if (!(startChar in patterns)) return [];
+
+      return directions
+        .filter((dir) => {
+          const endPos = getEndPosition(startPos, dir);
+          return isInBounds(endPos, dimensions);
+        })
+        .map((dir) => {
+          const positions = getWordPositions(startPos, dir);
+          const word = getWordFromPositions(grid, positions);
+          return word === patterns[startChar as keyof typeof patterns] ? 1 : 0;
+        });
+    })
+    .reduce((sum: number, count) => sum + count, 0);
+};
+
 function isInBounds({ x, y }: Position, { width, height }: GridDimensions) {
   return x >= 0 && x < width && y >= 0 && y < height;
 }
@@ -52,30 +77,61 @@ function getAllGridPositions({ width, height }: GridDimensions) {
   ).flat();
 }
 
-const countXMAS = (grid: string[][]) => {
+function isMAS(word: string): boolean {
+  return word === 'MAS' || word === 'SAM';
+}
+
+function getXShapePositions(center: Position): Position[][] {
+  return [
+    // First diagonal (top-left to bottom-right)
+    [
+      { x: center.x - 1, y: center.y - 1 }, // M
+      center, // A
+      { x: center.x + 1, y: center.y + 1 }, // S
+    ],
+    // Second diagonal (top-right to bottom-left)
+    [
+      { x: center.x + 1, y: center.y - 1 }, // M
+      center, // A
+      { x: center.x - 1, y: center.y + 1 }, // S
+    ],
+  ];
+}
+
+const countXMASPart2 = (grid: string[][]) => {
   const dimensions = {
     height: grid.length,
     width: grid[0].length,
   };
 
-  return getAllGridPositions(dimensions)
-    .flatMap((startPos) => {
-      const startChar = getCharAtPosition(grid, startPos);
-      if (!(startChar in patterns)) return [];
+  let count = 0;
 
-      return directions
-        .filter((dir) => {
-          const endPos = getEndPosition(startPos, dir);
-          return isInBounds(endPos, dimensions);
-        })
-        .map((dir) => {
-          const positions = getWordPositions(startPos, dir);
-          const word = getWordFromPositions(grid, positions);
-          return word === patterns[startChar as keyof typeof patterns] ? 1 : 0;
-        });
-    })
-    .reduce((sum: number, count) => sum + count, 0);
+  getAllGridPositions(dimensions).forEach((center) => {
+    // Skip if the center position is not 'A'
+    if (getCharAtPosition(grid, center) !== 'A') return;
+
+    const [diagonal1, diagonal2] = getXShapePositions(center);
+
+    if (
+      !diagonal1.every((pos) => isInBounds(pos, dimensions)) ||
+      !diagonal2.every((pos) => isInBounds(pos, dimensions))
+    ) {
+      return;
+    }
+
+    const word1 = getWordFromPositions(grid, diagonal1);
+    const word2 = getWordFromPositions(grid, diagonal2);
+
+    if (isMAS(word1) && isMAS(word2)) {
+      count++;
+    }
+  });
+
+  return count;
 };
 
-// 2458
-console.log('result', countXMAS(grid));
+// Part 1 result: 2458
+console.log('Part 1 result:', countXMAS(grid));
+
+// Part 2 result: 1945
+console.log('Part 2 result:', countXMASPart2(grid));
